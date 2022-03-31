@@ -3,7 +3,7 @@ const github = require('@actions/github');
 const {execSync} = require('child_process');
 const octokit = github.getOctokit(process.env.GITHUB_CREDENTIALS);
 const owner = 'coveo';
-const repo = 'cli';
+const repo = 'cli-v2-temp';
 
 const getPullRequestTitle = async () => {
   const pull_number = getPullRequestNumber();
@@ -78,13 +78,18 @@ const createOrUpdateReleaseDescription = async (tag, body) => {
 
 const downloadReleaseAssets = async (tag, determineAssetLocation) => {
   const release = await octokit.rest.repos.getReleaseByTag({repo, owner, tag});
-  const assets = await octokit.rest.repos.listReleaseAssets({
-    owner,
-    repo,
-    release_id: release.data.id,
-  });
+  // TODO: post-Oclif v2, revert: using the assets of the tag is insecure.
+  // const assets = await octokit.rest.repos.listReleaseAssets({
+  //   owner,
+  //   repo,
+  //   release_id: release.data.id,
+  // });
+  // assets.data.forEach((asset) => {
+  // #region TODO: post-oclif v2, delete this.
+  const assets = release.data.assets;
 
-  assets.data.forEach((asset) => {
+  assets.forEach((asset) => {
+    // //#endregion
     console.info(
       `Downloading asset ${asset.name} from ${asset.browser_download_url}.\nSize: ${asset.size} ...`
     );
@@ -94,7 +99,6 @@ const downloadReleaseAssets = async (tag, determineAssetLocation) => {
     );
   });
 };
-
 const getSnykCodeAlerts = () => {
   return octokit.rest.codeScanning.listAlertsForRepo({
     owner,
