@@ -52,7 +52,9 @@ async function main() {
     if (!match) {
       return;
     }
-    const destName = `coveo-latest-${match.groups.longExt}`;
+    const destName = `coveo-latest${
+      /\w/.test(match.groups.longExt[0]) ? '-' : ''
+    }${match.groups.longExt}`;
     fs.copyFileSync(
       path.resolve(topLevelDirectory, file.name),
       path.resolve(topLevelDirectory, destName)
