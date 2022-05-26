@@ -49,3 +49,11 @@ export const errorMessage = (
 function isErrorFromAPI(error: unknown): error is AxiosErrorFromAPI {
   return validate(error, AxiosErrorFromAPISchema).valid;
 }
+
+// TODO: put somewhere else
+export const ensureErrorIntegrity = (e: unknown, tagLine?: string) => {
+  if (e instanceof Error) {
+    return e;
+  }
+  return isErrorFromAPI(e) ? new APIError(e, tagLine) : new UnknownError(e);
+};

@@ -11,6 +11,7 @@ import {Parser} from 'json2csv';
 // eslint-disable-next-line node/no-extraneous-import
 import {SingleBar} from 'cli-progress';
 import {Trackable} from '../../../lib/decorators/preconditions/trackable';
+import {ensureErrorIntegrity} from '../../../lib/push/userFeedback';
 
 interface SearchResult {
   raw: {rowid: string};
@@ -107,7 +108,7 @@ export default class Dump extends Command {
 
   @Trackable()
   public async catch(err?: Error & {exitCode?: number}) {
-    throw err;
+    throw ensureErrorIntegrity(err);
   }
 
   private async writeChunks(allResults: SearchResult[]) {
