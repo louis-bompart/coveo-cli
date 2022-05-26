@@ -108,6 +108,12 @@ export default class Dump extends Command {
 
   @Trackable()
   public async catch(err?: Error & {exitCode?: number}) {
+    console.log('');
+    console.log('*********************');
+    console.log(err);
+    console.log(JSON.stringify(err));
+    console.log('*********************');
+
     throw ensureErrorIntegrity(err);
   }
 
