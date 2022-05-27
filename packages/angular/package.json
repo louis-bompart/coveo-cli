@@ -23,6 +23,9 @@
   "author": "Coveo",
   "main": "index.js",
   "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
   "schematics": "./dist/collection.json",
   "dependencies": {
     "@angular-devkit/core": "^13.2.4",
