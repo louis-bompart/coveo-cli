@@ -4,6 +4,7 @@ import {validate} from 'jsonschema';
 import dedent from 'ts-dedent';
 import {
   APIError,
+  APIErrorSchema,
   AxiosErrorFromAPI,
   AxiosErrorFromAPISchema,
 } from '../errors/APIError';
@@ -35,7 +36,7 @@ export const errorMessage = (
   e: unknown,
   options = {exit: false}
 ) => {
-  const error = isErrorFromAPI(e)
+  const error = isAxiosApiError(e)
     ? new APIError(e, tagLine)
     : new UnknownError(e);
 
@@ -46,14 +47,26 @@ export const errorMessage = (
   }
 };
 
-function isErrorFromAPI(error: unknown): error is AxiosErrorFromAPI {
+function isAxiosApiError(error: unknown): error is AxiosErrorFromAPI {
   return validate(error, AxiosErrorFromAPISchema).valid;
 }
 
 // TODO: put somewhere else
+function isApiError(error: unknown): error is APIError {
+  return validate(error, APIErrorSchema).valid;
+}
+
+// FIXME: some API errors have to following format
+// {
+//   statusCode: 403,
+//   message: 'Forbidden',
+//   type: 'AccessDeniedException'
+// }
+// but we check for the error code property
+// Fix the ApiError schema
 export const ensureErrorIntegrity = (e: unknown, tagLine?: string) => {
   if (e instanceof Error) {
     return e;
   }
-  return isErrorFromAPI(e) ? new APIError(e, tagLine) : new UnknownError(e);
+  return isApiError(e) ? new APIError(e) : new UnknownError(e);
 };
