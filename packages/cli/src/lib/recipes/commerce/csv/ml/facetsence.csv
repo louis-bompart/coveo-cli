@@ -1,0 +1,1 @@
+"{""modelId"":""{{MODEL_ID}}"",""rankingModifier"":75,""cacheMaximumAge"":""PT10S"",""customQueryParameters"":{""facetAutoSelect"":{""isEnabled"":false},""facetOrdering"":{""isEnabled"":true},""facetValueOrdering"":{""isEnabled"":true},""rankingBoost"":{""isEnabled"":true}},""useAdvancedConfiguration"":false,""dne"":{}}",,,mlFacetSense,,

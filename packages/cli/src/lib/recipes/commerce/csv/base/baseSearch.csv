@@ -1,2 +1,1 @@
-"override query commerce.catalogId:""{{MY_CATALOG}}""",,Catalog Id,queryParamOverride,,
 "rank adjacency: 3, concept: 0, docDate: 0, summary: 9, TFIDF: 0, title: 4",,https://docs.coveo.com/en/3180,rankingweight,,

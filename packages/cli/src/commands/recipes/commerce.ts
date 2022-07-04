@@ -21,6 +21,7 @@ import {selectFieldModel} from '../../lib/catalog/questions';
 import {getDocumentFieldsAndObjectTypeValues} from '../../lib/catalog/parse';
 import {newTask, stopCurrentTask} from '../../lib/utils/spinner';
 import {listAllFieldsFromOrg} from '../../lib/utils/field';
+import {PipelineConfigurator} from '../../lib/recipes/commerce/setup';
 
 type CommandRunReturn<T extends typeof Command> = Promise<
   ReturnType<InstanceType<T>['run']>
@@ -41,58 +42,49 @@ export default class CommerceRecipe extends Command {
   @Trackable()
   @Preconditions(
     IsAuthenticated(),
-    HasNecessaryCoveoPrivileges()
-    //   TODO:
+    HasNecessaryCoveoPrivileges() // TODO:
+    // verify resource limit
   )
   public async run() {
-    // FIXME: Should find a cleaner way to run processes and store variables at the beginning of the recipe so they can be used by multiple steps
+    this.logHeader('Running Prerequisites');
     const {flags, args} = await this.parse(CommerceRecipe);
-    this.ensureTempFolder();
+    const client = await this.client;
     const fields = await this.getFields();
-    const {sourceId, product} = await this.newStep(
-      'Catalog creation',
-      CatalogCreate,
-      [
-        args.name,
-        '--json',
-        '--sourceVisibility',
-        flags.sourceVisibility,
-        '--dataFiles',
-        ...flags.dataFiles,
-      ]
-    );
-    const groupingIdField = await this.additionalCommerceFeatures(fields); // Should return a different snapshot template based on the user choices
-    this.storeParametrizedSnapshotLocally(
-      product.objectType,
-      args.name,
-      groupingIdField!
-    );
+    const configurator = new PipelineConfigurator(client, fields);
 
-    await this.newStep('Organization setup', Push, [
-      '--sync',
-      '--skipPreview',
-      '--projectPath',
-      CommerceRecipe.tempFolder,
-      '--wait',
-      '600',
-    ]);
-    await this.newStep('Indexation', SourceCatalogAdd, [
-      sourceId,
-      '--createMissingFields',
-      '--fullUpload',
-      '--skipFullUploadCheck',
-      '--files',
-      ...flags.dataFiles,
-    ]);
+    // const {sourceId, product} = await this.newStep(
+    //   'Catalog creation',
+    //   CatalogCreate,
+    //   [
+    //     args.name,
+    //     '--json',
+    //     '--sourceVisibility',
+    //     flags.sourceVisibility,
+    //     '--dataFiles',
+    //     ...flags.dataFiles,
+    //   ]
+    // );
+
+    // should parametrize with object type
+    this.logHeader('Organization setup');
+    await configurator.configure(args.name);
+
+    // await this.newStep('Indexation', SourceCatalogAdd, [
+    //   sourceId,
+    //   '--createMissingFields',
+    //   '--fullUpload',
+    //   '--skipFullUploadCheck',
+    //   '--files',
+    //   ...flags.dataFiles,
+    // ]);
   }
 
   @Trackable()
   public async catch(err?: Error & {exitCode?: number}) {
     // TODO: CDX-1008: temporary fix until we actually ensure that oclif prints all errors (not only instanceof Error objects)
     if (err && !(err instanceof Error)) {
-      const logger = typeof err === 'string' ? CliUx.ux.error : console.error;
-      logger('Recipe step failed');
-      logger(err);
+      CliUx.ux.error('Recipe step failed', {exit: false});
+      console.log(err);
     }
     throw err;
   }
@@ -190,6 +182,7 @@ export default class CommerceRecipe extends Command {
     const client = await this.client;
     // FIXME: Find a way to prevent duplication of this part which is already being done in the catalog creation piece
     // This costs another document parse that can be prevented
+    newTask('Parsing documents');
     const {fields: detectedFieldsInData} =
       await getDocumentFieldsAndObjectTypeValues(client, flags.dataFiles);
     const existingFieldsInOrg: FieldModel[] = await listAllFieldsFromOrg(
@@ -241,6 +234,7 @@ export default class CommerceRecipe extends Command {
   }
 
   private logHeader(name: string) {
+    stopCurrentTask();
     CliUx.ux.log('');
     CliUx.ux.styledHeader(name);
   }
