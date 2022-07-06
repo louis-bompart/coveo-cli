@@ -22,6 +22,7 @@ import {getDocumentFieldsAndObjectTypeValues} from '../../lib/catalog/parse';
 import {newTask, stopCurrentTask} from '../../lib/utils/spinner';
 import {listAllFieldsFromOrg} from '../../lib/utils/field';
 import {PipelineConfigurator} from '../../lib/recipes/commerce/setup';
+import {buildError} from '../../hooks/analytics/eventUtils';
 
 type CommandRunReturn<T extends typeof Command> = Promise<
   ReturnType<InstanceType<T>['run']>
@@ -82,11 +83,9 @@ export default class CommerceRecipe extends Command {
   @Trackable()
   public async catch(err?: Error & {exitCode?: number}) {
     // TODO: CDX-1008: temporary fix until we actually ensure that oclif prints all errors (not only instanceof Error objects)
-    if (err && !(err instanceof Error)) {
-      CliUx.ux.error('Recipe step failed', {exit: false});
-      console.log(err);
-    }
-    throw err;
+    stopCurrentTask(err);
+    CliUx.ux.error('Recipe step failed', {exit: false});
+    throw buildError(err);
   }
 
   public async finally(_?: Error) {

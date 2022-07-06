@@ -8,12 +8,15 @@ import PlatformClient, {
 import {CliUx} from '@oclif/core';
 import {selectFieldModel} from '../../catalog/questions';
 import {newTask, stopCurrentTask} from '../../utils/spinner';
-import {Pipeline} from './pipeline';
+import {RecommendationPipeline, SearchPipeline} from './pipeline';
 import {mlTemplates} from './templates/mlModels';
 
-// TODO: check that the user can create all the following ML models. or add try catches on every call
+export interface AdditionalFeatures {
+  productGroupingField?: string;
+}
+
 export class PipelineConfigurator {
-  private productGroupingField: string | null = null;
+  private additionalFeatures: AdditionalFeatures = {};
   private MlMap: Map<ModelTypes, MLModelCreated> = new Map();
   public constructor(
     private client: PlatformClient,
@@ -26,8 +29,9 @@ export class PipelineConfigurator {
     await this.createMlModels(tag);
     newTask('Configuring pipelines');
     // TODO: In the future, ask for the pipelines the user wants to create
-    await this.setupSearchPipeline(tag);
-    // await this.setupRecommendationPipeline();
+    // await this.setupSearchPipeline(tag);
+    await this.setupRecommendationPipeline();
+    // await this.setupPDP(); // TODO: setup PDP
     stopCurrentTask();
   }
 
@@ -36,12 +40,18 @@ export class PipelineConfigurator {
    */
   private async askForAdditionalFeatures() {
     await this.confirmProductGrouping();
-    // TODO: ask for DNE
-    // if DNE add facetsence to this.MlMap
   }
 
   private async createMlModels(tag: string) {
-    for (const [modelType, model] of mlTemplates.entries()) {
+    const baseMlModels = [
+      ModelTypes.TopClicks,
+      ModelTypes.ECommerce,
+      ModelTypes.QuerySuggest,
+    ];
+
+    for (const modelType of baseMlModels) {
+      const model = mlTemplates.get(modelType);
+      if (!model) continue;
       const registrationModel: RegistrationModel = {
         ...model,
         modelName: BuiltInTransformers.toLowerCase(`${tag} ${model.modelName}`),
@@ -55,40 +65,50 @@ export class PipelineConfigurator {
   }
 
   private async setupSearchPipeline(catalogId: string) {
-    const pipelineConfig = new Pipeline('baseSearch');
+    const pipelineConfig = new SearchPipeline(this.client);
     const mlTopClicks = this.MlMap.get(ModelTypes.TopClicks);
     const mlQureySuggest = this.MlMap.get(ModelTypes.QuerySuggest);
-    const mlFacetSense = this.MlMap.get(ModelTypes.FacetSense);
-    const pipelineModel = {
-      name: 'Search',
-      description: 'Main Search and Listing Pipeline',
-    };
 
     await pipelineConfig
-      .toggleProductGrouping(this.productGroupingField)
-      .linkCatalog(catalogId) // TODO: create a subclass for each pipeline
+      .setCondition({definition: 'when not ( $recommendation isPopulated )'})
+      .toggleProductGrouping(this.additionalFeatures.productGroupingField)
+      .linkCatalog(catalogId)
       .associate(mlTopClicks)
       .associate(mlQureySuggest)
-      .associate(mlFacetSense)
-      .create(this.client, pipelineModel);
+      .create();
   }
 
   private async setupRecommendationPipeline() {
-    // TODO:
+    const pipelineConfig = new RecommendationPipeline(this.client);
+    const recommendationModel = this.MlMap.get(ModelTypes.ECommerce);
+    await pipelineConfig
+      .setCondition({definition: 'when $recommendation isPopulated'})
+      .associate(recommendationModel, 'popularbought')
+      .associate(recommendationModel, 'frequentbought')
+      .associate(recommendationModel, 'cart')
+      .associate(recommendationModel, 'frequentviewed')
+      .associate(recommendationModel, 'popularviewed')
+      .associate(recommendationModel, 'user')
+      .associate(recommendationModel, 'frequentviewedsamecategory')
+      .create();
   }
 
   private async confirmProductGrouping() {
+    this.additionalFeatures.productGroupingField = await this.confirmFeature(
+      'Enable Product Grouping (https://docs.coveo.com/en/l78i2152)?',
+      'Select your grouping field'
+    );
+  }
+
+  private async confirmFeature(confirmMessage: string, question: string) {
     const enableProductGrouping = await CliUx.ux.confirm(
-      'Enable Product Grouping (https://docs.coveo.com/en/l78i2152)? (y/n)'
+      `${confirmMessage} (y/n)`
     );
     if (!enableProductGrouping) {
       return;
     }
-    const {name} = await selectFieldModel(
-      'Select your grouping field',
-      this.fields
-    );
-    this.productGroupingField = name;
+    const {name} = await selectFieldModel(question, this.fields);
+    return name;
   }
 }
 

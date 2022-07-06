@@ -1,0 +1,1 @@
+"{""modelId"":""{{MODEL_ID}}"",""rankingModifier"":1000,""maxRecommendations"":10,""cacheMaximumAge"":""PT10S"",""exclusive"":true,""customQueryParameters"":{""submodel"":""cart""},""useAdvancedConfiguration"":false}","when $recommendation is ""cart""",,mlProductRecommendation,,

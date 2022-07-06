@@ -1,0 +1,1 @@
+"{""modelId"":""{{MODEL_ID}}"",""rankingModifier"":1000,""maxRecommendations"":0,""cacheMaximumAge"":""PT10S"",""exclusive"":true,""customQueryParameters"":{""strategy"":""frequentViewedSameCategory""},""useAdvancedConfiguration"":true}","when $recommendation is ""frequentViewedSameCategory""",,mlProductRecommendation,,

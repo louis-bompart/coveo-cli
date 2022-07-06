@@ -1,1 +1,1 @@
-filter cq `@objectType=={{OBJECT_TYPE_TO_RECOMMEND}}`,,,filter,,
+filter cq `@objectType=={{OBJECT_TYPE_FIELD}}`,,,filter,,

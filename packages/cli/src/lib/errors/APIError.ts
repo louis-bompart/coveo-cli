@@ -48,7 +48,7 @@ export const AxiosErrorFromAPISchema = {
 export class APIError extends PrintableError {
   public constructor(
     error: APIErrorResponse | AxiosErrorFromAPI,
-    tagLine?: string
+    tagLine = ''
   ) {
     super(SeverityLevel.Error);
     let errorCode: string;
