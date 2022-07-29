@@ -41,7 +41,7 @@ export default class Push extends Command {
 
   public static flags = {
     ...wait(),
-    ...previewLevel(),
+    ...previewLevel(PreviewLevelValue.Light),
     ...organization(
       'The unique identifier of the organization where to send the changes'
     ),

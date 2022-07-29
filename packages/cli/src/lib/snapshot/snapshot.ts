@@ -100,6 +100,8 @@ export class Snapshot {
     await this.waitUntilDiffDone();
 
     const viewer = new SnapshotDiffReporter(
+      this.targetId,
+      this.latestReport,
       this.latestDiffReport,
       project.pathToProject
     );

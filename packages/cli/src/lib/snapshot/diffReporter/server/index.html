@@ -54,7 +54,7 @@
           createNavivationButtons(navi);
         }
 
-        fetch('/files')
+        fetch('/diff')
           .then((response) => response.json())
           .then((fileTuples) => {
             for (const {original, modified} of fileTuples) {
