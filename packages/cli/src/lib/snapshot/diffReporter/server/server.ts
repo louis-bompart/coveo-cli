@@ -1,6 +1,9 @@
+import {applyPatch} from 'diff';
 import {readFileSync} from 'node:fs';
 import http, {IncomingMessage, Server, ServerResponse} from 'node:http';
-import {resolve} from 'node:path';
+import {join, resolve} from 'node:path';
+import {Project} from '../../../project/project';
+import {getAllFilesPath} from '../filesDiffProcessor';
 
 // const html = readFileSync(__dirname + '/index.html');
 
@@ -9,10 +12,7 @@ export class DiffServer {
   private static port = 3000;
   private server: Server;
 
-  public constructor(
-    private projectPath: string,
-    private diffFilePath: string
-  ) {
+  public constructor(private project: Project) {
     this.server = http.createServer(this.requestListener);
 
     this.server.listen(DiffServer.port, DiffServer.hostname, () => {
@@ -66,17 +66,22 @@ export class DiffServer {
   };
 
   private serveDiffFiles = (req: IncomingMessage, res: ServerResponse) => {
-    const files: {} = []; // TODO:
-    // TODO: get project path
-    res.setHeader('Content-Type', 'application/json');
+    // const patchPaths = join(this.project.pathToProject, 'diffs'); // TODO: make the project create a diff folder
+    // const patchFilePaths = getAllFilesPath(patchPaths);
     const tuples = [];
 
-    const originalFiles = listFilesSync();
-    for (const original of originalFiles) {
-      const patch = getCorrespondingPatch(original);
-      const modified = this.applyPatch(patch);
-      tuples.push({original, modified});
+    this.project.contains;
+    for (const [originalPath, patchPath] of this.project.tuples()) {
+      const original = readFileSync(originalPath);
+      const patch = readFileSync(patchPath);
+      const modified = applyPatch(original.toString(), patch.toString());
+      tuples.push({original, modified}); // TODO: stream instead of saving in disk
     }
+    // for (const patchPath of patchFilePaths) {
+    //   const patch = readFileSync(patchPath);
+    //   const modified = applyPatch(original, patch.toString());
+    //   tuples.push({original, modified});
+    // }
 
     // var stream = fs.createReadStream(fileLoc);
 
@@ -91,6 +96,7 @@ export class DiffServer {
     //       res.statusCode = 200;
     //       stream.pipe(res);
 
+    res.setHeader('Content-Type', 'application/json');
     res.writeHead(200);
     res.end(JSON.stringify(tuples));
   };

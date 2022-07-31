@@ -1,4 +1,4 @@
-import http from 'node:http';
+import {applyPatch} from 'diff';
 import {
   ResourceSnapshotsReportModel,
   ResourceSnapshotType,
@@ -6,7 +6,6 @@ import {
 } from '@coveord/platform-client';
 import {CliUx} from '@oclif/core';
 import axios from 'axios';
-import {green} from 'chalk';
 import {
   mkdirSync,
   existsSync,
@@ -14,15 +13,14 @@ import {
   writeFileSync,
   Dirent,
   rmSync,
+  readFileSync,
 } from 'fs-extra';
 import {join, resolve} from 'path';
-import {DiffFile} from 'diff2html/lib/types';
 import {buildResourcesToExport} from '../pullModel/validation/model';
 import {SnapshotFactory} from '../snapshotFactory';
-import {Snapshot} from '../snapshot';
 import {Project} from '../../project/project';
 import {DiffServer} from './server/server';
-1;
+
 export class SnapshotDiffReporter {
   private static readonly previewDirectoryName = 'preview';
   private static previewHistorySize = 1;
@@ -37,7 +35,7 @@ export class SnapshotDiffReporter {
     private readonly projectPath: string
   ) {
     this.resourcesToPreview = Object.keys(
-      report.resourceOperationResults
+      this.report.resourceOperationResults
     ) as ResourceSnapshotType[];
   }
 
@@ -60,33 +58,30 @@ export class SnapshotDiffReporter {
       this.deleteOldestPreviews();
     }
     const dirPath = join(this.previewDirectory, this.diffModel.snapshotId);
+    const diffPath = join(dirPath, 'diff'); // TODO: make the project create a diff folder
 
-    mkdirSync(dirPath, {
+    // mkdirSync(dirPath, {
+    //   recursive: true,
+    // });
+    mkdirSync(diffPath, {
       recursive: true,
     });
 
     const project = new Project(resolve(dirPath));
     await this.saveOrgInitialState(project);
 
-    const list: DiffFile[] = [];
     for (const [resourceName, diffModel] of Object.entries(
       this.diffModel.files
     )) {
-      const diffFilePath = join(dirPath, `${resourceName}.patch`);
-      const diff = await this.downloadDiff(diffModel.url, diffFilePath);
-      list.push(...parse(diff));
-      // await this.generateHtmlFromDiff(diff);
+      const diffFilePath = join(diffPath, `${resourceName}.patch`);
+      const patch = await this.downloadDiff(diffModel.url, diffFilePath);
+      // TODO: project class should write patch into disk. That way, we don't need to worry after the file extension
+      // We can
+      // project.saveDiff(resourceName, patch)
+      // const source = this.getOriginResource(project, resourceName);
+      // this.saveFinalState(source, patch, finalStatePath);
     }
-
-    // TODO: PASS THE FILES TO THE STATIC PAGE AND RENDER FROM THERE. THAT WAY, WE CAN ADD A LINE LIMIT INSTEAD OF GENERATING AN ENTIRE HTML DIFF
-    await this.startHttpServer(project.resourcePath, dirPath);
-
-    // TODO: open HTML in browser
-    CliUx.ux.action.stop(green('✔'));
-  }
-
-  private startHttpServer(projectPath: string, diffFilePath: string) {
-    const server = new DiffServer(projectPath, diffFilePath);
+    // new DiffServer(project);
   }
 
   private async saveOrgInitialState(project: Project) {
@@ -105,8 +100,19 @@ export class SnapshotDiffReporter {
     return snapshot;
   }
 
-  private async generateHtmlFromDiff(diff: string) {
-    throw 'TODO:';
+  // private saveFinalState(source: string, patch: string, outputPath: string) {
+  //   const finalStateContent = applyPatch(source, patch);
+  //   writeFileSync(outputPath, finalStateContent);
+  // }
+
+  private getOriginResource(project: Project, resourceName: string) {
+    try {
+      return readFileSync(
+        join(project.resourcePath, `${resourceName}.json`)
+      ).toString();
+    } catch (error) {
+      throw 'TODO:';
+    }
   }
 
   private async downloadDiff(
