@@ -19,7 +19,6 @@ interface ResourceManifest {
 }
 export class Project {
   public static readonly resourceFolderName = 'resources';
-  public static readonly diffFolderName = 'diffs';
   public static readonly patchFileExtension = '.patch';
   public static readonly jsonFormat: WriteOptions = {spaces: '\t'};
   public constructor(private _pathToProject: string, orgId?: string) {
@@ -40,9 +39,6 @@ export class Project {
   public reset() {
     if (this.isResourcesProject) {
       rmSync(Project.resourceFolderName, {recursive: true, force: true});
-    }
-    if (this.isDiffProject) {
-      rmSync(Project.diffFolderName, {recursive: true, force: true});
     }
   }
 
@@ -127,13 +123,6 @@ export class Project {
     return readJsonSync(this.resourceManifestPath, {throws: false});
   }
 
-  // SHould return an array of the original file and its patch (thoses are file paths... not data)
-  public tuples(): {source: string; patch: string}[] {
-    for (const resource of this.d) {
-    }
-    throw 'TODO:';
-  }
-
   public get pathToProject() {
     return this._pathToProject;
   }
@@ -160,10 +149,6 @@ export class Project {
 
   private get isResourcesProject() {
     return this.contains(Project.resourceFolderName);
-  }
-
-  private get isDiffProject() {
-    return this.contains(Project.diffFolderName);
   }
 
   private makeCoveoProject(orgId?: string) {
