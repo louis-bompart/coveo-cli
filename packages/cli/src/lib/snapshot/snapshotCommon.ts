@@ -77,6 +77,7 @@ export async function preview(
 
     case PreviewLevelValue.Detailed:
       await snapshot.preview();
+      CliUx.ux.action.start('Computing snapshot diff');
       await snapshot.diff(project);
       break;
   }

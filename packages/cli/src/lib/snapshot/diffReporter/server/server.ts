@@ -1,34 +1,32 @@
+import {CliUx} from '@oclif/core';
 import {applyPatch} from 'diff';
 import {readFileSync} from 'node:fs';
 import http, {IncomingMessage, Server, ServerResponse} from 'node:http';
-import {join, resolve} from 'node:path';
-import {Project} from '../../../project/project';
-import {getAllFilesPath} from '../filesDiffProcessor';
+import {resolve} from 'node:path';
+import open from 'open';
 
-// const html = readFileSync(__dirname + '/index.html');
+export type DiffFilePaths = {originalFile: string; patchFile: string}[];
 
 export class DiffServer {
   private static hostname = '127.0.0.1';
-  private static port = 3000;
-  private server: Server;
+  private static port = 3000; // TODO: Get a unsused port
 
-  public constructor(private project: Project) {
-    this.server = http.createServer(this.requestListener);
-
-    this.server.listen(DiffServer.port, DiffServer.hostname, () => {
-      console.log(
-        `Server running at http://${hostnameDiffServer.hostname}:${DiffServer.port}/`
-      );
-      // TODO: open page in browser
-      console.log('Enter Ctr+c to exit');
-    });
+  public constructor(private tuples: DiffFilePaths) {
+    const url = `http://${DiffServer.hostname}:${DiffServer.port}`;
+    http
+      .createServer(this.requestListener)
+      .listen(DiffServer.port, DiffServer.hostname, () => {
+        console.log(`Diff available at ${url}/`);
+        console.log('Enter ctr+c to exit');
+        open(url);
+      });
   }
 
   private router = (req: IncomingMessage, res: ServerResponse) => {
     // TODO: maybe in a separate class
     if (req.url?.match('node_modules')) {
       this.serveStaticFiles(req, res);
-    } else if (req.url === 'diff') {
+    } else if (req.url === '/diff') {
       this.serveDiffFiles(req, res);
     } else if (req.url === '/') {
       this.serveHtmlPage(req, res);
@@ -59,7 +57,9 @@ export class DiffServer {
   };
 
   private serveHtmlPage = (req: IncomingMessage, res: ServerResponse) => {
-    const html = readFileSync(__dirname + '/index.html');
+    const htmlPath = require.resolve('./index.html');
+    const html = readFileSync(htmlPath);
+
     res.setHeader('Content-Type', 'text/html');
     res.writeHead(200);
     res.end(html);
@@ -70,11 +70,12 @@ export class DiffServer {
     // const patchFilePaths = getAllFilesPath(patchPaths);
     const tuples = [];
 
-    this.project.contains;
-    for (const [originalPath, patchPath] of this.project.tuples()) {
-      const original = readFileSync(originalPath);
-      const patch = readFileSync(patchPath);
-      const modified = applyPatch(original.toString(), patch.toString());
+    for (const {originalFile, patchFile} of this.tuples) {
+      const original = readFileSync(originalFile).toString();
+      const patch = readFileSync(patchFile).toString();
+
+      // const modified = applyPatch(original, patch);
+      const modified = patch;
       tuples.push({original, modified}); // TODO: stream instead of saving in disk
     }
     // for (const patchPath of patchFilePaths) {

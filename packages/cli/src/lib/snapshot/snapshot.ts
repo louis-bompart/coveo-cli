@@ -18,7 +18,6 @@ import {SnapshotOperationTimeoutError} from '../errors';
 import {Project} from '../project/project';
 import {SnapshotNoReportFoundError} from '../errors/snapshotErrors';
 import {SnapshotDiffReporter} from './diffReporter/diffReporter';
-import {CliUx} from '@oclif/core';
 
 export type SnapshotReport = ResourceSnapshotsReportModel | SnapshotDiffModel;
 
@@ -91,7 +90,6 @@ export class Snapshot {
 
   public async diff(project: Project) {
     const numberOfLinesMax = 0; // To always get a downloadable file
-    CliUx.ux.action.start('Getting snapshot diff');
     await this.snapshotClient.diff(
       this.id,
       this.latestReport.id,

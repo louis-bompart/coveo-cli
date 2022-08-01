@@ -10,14 +10,18 @@
 
     <script src="node_modules/monaco-editor/min/vs/loader.js"></script>
     <!-- <script src="public/node_modules/monaco-editor/min/vs/loader.js"></script> -->
+    <style>
+      .editor-container {
+        width: 1200px;
+        height: 600px;
+        border: 1px solid grey;
+      }
+    </style>
   </head>
   <body>
     <h2>Monaco Diff Editor Sample</h2>
     <div id="navbar"></div>
-    <div
-      id="container"
-      style="width: 800px; height: 600px; border: 1px solid grey"
-    ></div>
+    <div id="container"></div>
 
     <script>
       require.config({
@@ -41,27 +45,33 @@
           }, 2000);
         }
 
+        function addNewEditorContainer() {
+          const container = document.getElementById('container');
+          const newEditorContainer = document.createElement('div');
+          newEditorContainer.classList.add('editor-container');
+          container.appendChild(newEditorContainer);
+          return newEditorContainer;
+        }
+
         function newEditor(originalTxt, modifiedTxt) {
-          // TODO: Create HTML div element from container with an Id
-          // TODO: Append HTML div element to container
+          const editorContainer = addNewEditorContainer();
           // TODO: Link to NavBar
-          var container = document.getElementById('container');
-          var diffEditor = monaco.editor.createDiffEditor(container);
+          var diffEditor = monaco.editor.createDiffEditor(editorContainer);
           diffEditor.setModel({
             original: monaco.editor.createModel(originalTxt, 'json'),
             modified: monaco.editor.createModel(modifiedTxt, 'json'),
           });
-          createNavivationButtons(navi);
+          createNavivationButtons(diffEditor);
         }
 
         fetch('/diff')
           .then((response) => response.json())
           .then((fileTuples) => {
             for (const {original, modified} of fileTuples) {
+              console.log('new editor');
               newEditor(original, modified);
             }
           });
-        // TYPE: {original: string, modified: string} []
       });
     </script>
   </body>

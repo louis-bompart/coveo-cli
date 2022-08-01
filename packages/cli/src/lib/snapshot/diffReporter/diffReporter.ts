@@ -19,7 +19,7 @@ import {join, resolve} from 'path';
 import {buildResourcesToExport} from '../pullModel/validation/model';
 import {SnapshotFactory} from '../snapshotFactory';
 import {Project} from '../../project/project';
-import {DiffServer} from './server/server';
+import {DiffFilePaths, DiffServer} from './server/server';
 
 export class SnapshotDiffReporter {
   private static readonly previewDirectoryName = 'preview';
@@ -70,18 +70,47 @@ export class SnapshotDiffReporter {
     const project = new Project(resolve(dirPath));
     await this.saveOrgInitialState(project);
 
+    const tuples: DiffFilePaths = [];
     for (const [resourceName, diffModel] of Object.entries(
       this.diffModel.files
     )) {
-      const diffFilePath = join(diffPath, `${resourceName}.patch`);
-      const patch = await this.downloadDiff(diffModel.url, diffFilePath);
-      // TODO: project class should write patch into disk. That way, we don't need to worry after the file extension
-      // We can
+      const patchFile = join(diffPath, `${resourceName}.patch`);
+      CliUx.ux.action.start('Loading diff files');
+      await this.downloadDiff(diffModel.url, patchFile);
+      const originalFile = this.getOriginalResourceFilePath(
+        resourceName,
+        project
+      );
+      if (originalFile) {
+        tuples.push({
+          originalFile,
+          patchFile,
+        });
+      }
       // project.saveDiff(resourceName, patch)
+      // TODO: project class should write patch into disk. That way, we don't need to worry after the file extension
       // const source = this.getOriginResource(project, resourceName);
       // this.saveFinalState(source, patch, finalStatePath);
     }
-    // new DiffServer(project);
+    console.log('*********************');
+    console.log(tuples);
+    console.log('*********************');
+
+    CliUx.ux.action.stop();
+    new DiffServer(tuples);
+  }
+
+  private getOriginalResourceFilePath(
+    resourceName: string,
+    project: Project
+  ): string | null {
+    const resourceFiles = readdirSync(project.resourcePath, {
+      withFileTypes: true,
+    });
+    const file = resourceFiles.find(
+      (file) => file.isFile() && file.name === `${resourceName}.json`
+    );
+    return file?.name ? join(project.resourcePath, file.name) : null;
   }
 
   private async saveOrgInitialState(project: Project) {
@@ -98,21 +127,6 @@ export class SnapshotDiffReporter {
       this.orgId
     );
     return snapshot;
-  }
-
-  // private saveFinalState(source: string, patch: string, outputPath: string) {
-  //   const finalStateContent = applyPatch(source, patch);
-  //   writeFileSync(outputPath, finalStateContent);
-  // }
-
-  private getOriginResource(project: Project, resourceName: string) {
-    try {
-      return readFileSync(
-        join(project.resourcePath, `${resourceName}.json`)
-      ).toString();
-    } catch (error) {
-      throw 'TODO:';
-    }
   }
 
   private async downloadDiff(
@@ -148,3 +162,24 @@ export class SnapshotDiffReporter {
     return Object.keys(this.diffModel.files).length >= 0;
   }
 }
+
+// new DiffServer([
+//   {
+//     originalFile:
+//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/resources/FIELD.json',
+//     patchFile:
+//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/diff/FIELD.patch',
+//   },
+//   {
+//     originalFile:
+//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/resources/MAPPING.json',
+//     patchFile:
+//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/diff/MAPPING.patch',
+//   },
+//   {
+//     originalFile:
+//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/resources/SOURCE.json',
+//     patchFile:
+//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/diff/SOURCE.patch',
+//   },
+// ]);
