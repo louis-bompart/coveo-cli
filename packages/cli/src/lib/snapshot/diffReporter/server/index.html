@@ -6,34 +6,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 
-    <title>CLI: Diff viewer</title>
+    <title>Diff viewer</title>
 
+    <!-- Monaco Editor resources -->
     <script src="node_modules/monaco-editor/min/vs/loader.js"></script>
-    <!-- <script src="public/node_modules/monaco-editor/min/vs/loader.js"></script> -->
+
+    <!-- Gibson font -->
+    <link rel="stylesheet" href="https://use.typekit.net/bqa0xml.css" />
+
     <style>
+      :root {
+        --main-font: 'canada-type-gibson', sans-serif;
+        --code-font: source_code_pro_regular, 'Courier New', Courier, monospace;
+        --main-font-regular: 300;
+        --main-font-bold: 400;
+        --main-font-bolder: 500;
+        --default-font-size: 14px;
+        --small-font-size: 12px;
+
+        --default-text-color: #282829;
+        --title-text-color: #282829;
+        --default-border-color: #e4e7e7;
+
+        --diff-background-color: var(--grey-10);
+        --diff-text-color: var(--grey-80);
+        --diff-font-family: var(--code-font);
+        --diff-gutter-insert-background-color: var(--rain-forest-green-20);
+        --diff-gutter-delete-background-color: #fff1f0;
+        --diff-code-insert-background-color: #ddf4ef;
+        --diff-code-delete-background-color: var(--pomegranate-red-10);
+        --diff-gutter-decoration-background-color: var(--cerulean-blue-20);
+        --diff-decoration-background-color: var(--cerulean-blue-10);
+        /* DELETE unused variables */
+      }
+      body {
+        font-family: Gibson, Arial;
+      }
+      h1,
+      h2,
+      h3 {
+        color: var(--title-text-color);
+        text-transform: capitalize;
+      }
       .editor-container {
         width: 1200px;
         height: 600px;
-        border: 1px solid grey;
+        border: 1px solid var(--default-border-color);
+        border-radius: 5px;
+        overflow: hidden;
+        margin-bottom: 80px;
+      }
+
+      /* The sidebar menu */
+      .sidenav {
+        height: 100%;
+        border: 1px solid var(--default-border-color);
+        width: 160px;
+        position: fixed;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        overflow-x: hidden;
+        padding-top: 20px;
+      }
+
+      /* The navigation menu links */
+      .sidenav a {
+        padding: 10px 8px 10px 16px;
+        margin: 10px 0;
+        text-decoration: none;
+        text-transform: capitalize;
+        font-size: 20px;
+        color: #818181;
+        display: block;
+      }
+
+      /* When you mouse over the navigation links, change their color */
+      .sidenav a:hover {
+        color: #f1f1f1;
+      }
+
+      /* Style page content */
+      .container {
+        margin-left: 160px; /* Same as the width of the sidebar */
+        padding: 0px 10px;
       }
     </style>
   </head>
   <body>
-    <h2>Monaco Diff Editor Sample</h2>
-    <div id="navbar"></div>
-    <div id="container"></div>
+    <div id="sidenav" class="sidenav"></div>
+    <div id="container" class="container">
+      <h2>Snapshot Diff</h2>
+    </div>
 
     <script>
       require.config({
         paths: {vs: 'node_modules/monaco-editor/min/vs'},
-        // paths: {vs: '/assets/monaco-editor/min/vs'},
       });
 
       require(['vs/editor/editor.main'], function () {
-        function createNavBar() {
-          // TODO:
-        }
-
         function createNavivationButtons(diffEditor) {
           var container = document.getElementById('container');
           var navi = monaco.editor.createDiffNavigator(diffEditor, {
@@ -45,31 +116,77 @@
           }, 2000);
         }
 
-        function addNewEditorContainer() {
+        function addNewEditorContainer(resourceName) {
           const container = document.getElementById('container');
+          const newHeader = document.createElement('h3');
           const newEditorContainer = document.createElement('div');
+
+          newHeader.innerText = resourceName.toLowerCase();
+          newHeader.id = resourceName;
           newEditorContainer.classList.add('editor-container');
+
+          container.appendChild(newHeader);
           container.appendChild(newEditorContainer);
           return newEditorContainer;
         }
 
-        function newEditor(originalTxt, modifiedTxt) {
-          const editorContainer = addNewEditorContainer();
-          // TODO: Link to NavBar
-          var diffEditor = monaco.editor.createDiffEditor(editorContainer);
+        function addToSideBar(resourceName) {
+          const sidenav = document.getElementById('sidenav');
+          const newAnchor = document.createElement('a');
+
+          newAnchor.href = `#${resourceName}`;
+          newAnchor.classList.add = 'navigation-item';
+          newAnchor.innerText = resourceName.toLowerCase();
+          sidenav.appendChild(newAnchor);
+        }
+
+        function newEditor(resourceName, originalTxt, modifiedTxt) {
+          const editorContainer = addNewEditorContainer(resourceName);
+          const diffEditor = monaco.editor.createDiffEditor(editorContainer, {
+            fontFamily:
+              'source_code_pro_regular, "Courier New", Courier, monospace', // TODO: use a valid font
+            fontSize: 16,
+          });
+
           diffEditor.setModel({
             original: monaco.editor.createModel(originalTxt, 'json'),
             modified: monaco.editor.createModel(modifiedTxt, 'json'),
           });
+
+          addToSideBar(resourceName);
           createNavivationButtons(diffEditor);
         }
 
+        function setTheme() {
+          const getColor = (property) => {
+            const style = getComputedStyle(document.body);
+            return style.getPropertyValue(property).trim();
+          };
+
+          monaco.editor.defineTheme('coveo', {
+            base: 'vs',
+            inherit: true,
+            rules: [],
+            colors: {
+              // 'diffEditor.insertedTextBackground': getColor(
+              //   '--diff-code-insert-background-color'
+              // ),
+              // 'diffEditor.removedTextBackground': getColor(
+              //   '--diff-gutter-delete-background-color'
+              // ),
+            },
+          });
+
+          monaco.editor.setTheme('coveo');
+        }
+
+        setTheme();
         fetch('/diff')
           .then((response) => response.json())
           .then((fileTuples) => {
-            for (const {original, modified} of fileTuples) {
+            for (const {resourceName, original, modified} of fileTuples) {
               console.log('new editor');
-              newEditor(original, modified);
+              newEditor(resourceName, original, modified);
             }
           });
       });

@@ -3,6 +3,7 @@ import {
   existsSync,
   readdirSync,
   unlinkSync,
+  readFileSync,
   writeFileSync,
   rmSync,
 } from 'fs';
@@ -20,7 +21,6 @@ interface ResourceManifest {
 export class Project {
   public static readonly resourceFolderName = 'resources';
   public static readonly patchFileExtension = '.patch';
-  public static readonly jsonFormat: WriteOptions = {spaces: '\t'};
   public constructor(private _pathToProject: string, orgId?: string) {
     if (!this.isCoveoProject) {
       this.makeCoveoProject(orgId);
@@ -40,6 +40,7 @@ export class Project {
     if (this.isResourcesProject) {
       rmSync(Project.resourceFolderName, {recursive: true, force: true});
     }
+    // TODO: delete diff folder
   }
 
   private formatResourceFiles(dirPath = this.resourcePath) {
@@ -51,8 +52,8 @@ export class Project {
         return;
       }
       if (file.isFile() && extname(filePath) === '.json') {
-        const content = readJsonSync(filePath);
-        writeJsonSync(filePath, content, Project.jsonFormat);
+        const content = readFileSync(filePath);
+        writeFileSync(filePath, content);
       }
     });
   }

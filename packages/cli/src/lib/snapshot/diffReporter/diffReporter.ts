@@ -1,4 +1,3 @@
-import {applyPatch} from 'diff';
 import {
   ResourceSnapshotsReportModel,
   ResourceSnapshotType,
@@ -13,7 +12,6 @@ import {
   writeFileSync,
   Dirent,
   rmSync,
-  readFileSync,
 } from 'fs-extra';
 import {join, resolve} from 'path';
 import {buildResourcesToExport} from '../pullModel/validation/model';
@@ -83,6 +81,7 @@ export class SnapshotDiffReporter {
       );
       if (originalFile) {
         tuples.push({
+          resourceName,
           originalFile,
           patchFile,
         });
@@ -162,24 +161,3 @@ export class SnapshotDiffReporter {
     return Object.keys(this.diffModel.files).length >= 0;
   }
 }
-
-// new DiffServer([
-//   {
-//     originalFile:
-//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/resources/FIELD.json',
-//     patchFile:
-//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/diff/FIELD.patch',
-//   },
-//   {
-//     originalFile:
-//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/resources/MAPPING.json',
-//     patchFile:
-//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/diff/MAPPING.patch',
-//   },
-//   {
-//     originalFile:
-//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/resources/SOURCE.json',
-//     patchFile:
-//       '/Users/ylakhdar/sandbox/cdx-1073/preview/clitestlkatienc-wwajcwiterdnyp7hh525hbcbqe/diff/SOURCE.patch',
-//   },
-// ]);

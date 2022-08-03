@@ -1,11 +1,17 @@
 import {CliUx} from '@oclif/core';
 import {applyPatch} from 'diff';
+import {readJSONSync} from 'fs-extra';
 import {readFileSync} from 'node:fs';
 import http, {IncomingMessage, Server, ServerResponse} from 'node:http';
+import {EOL} from 'node:os';
 import {resolve} from 'node:path';
 import open from 'open';
 
-export type DiffFilePaths = {originalFile: string; patchFile: string}[];
+export type DiffFilePaths = {
+  resourceName: string;
+  originalFile: string;
+  patchFile: string;
+}[];
 
 export class DiffServer {
   private static hostname = '127.0.0.1';
@@ -70,14 +76,14 @@ export class DiffServer {
     // const patchFilePaths = getAllFilesPath(patchPaths);
     const tuples = [];
 
-    for (const {originalFile, patchFile} of this.tuples) {
+    for (const {resourceName, originalFile, patchFile} of this.tuples) {
       const original = readFileSync(originalFile).toString();
       const patch = readFileSync(patchFile).toString();
 
-      // const modified = applyPatch(original, patch);
-      const modified = patch;
-      tuples.push({original, modified}); // TODO: stream instead of saving in disk
+      const modified = applyPatch(JSON.stringify(original, null, 2), patch, {});
+      tuples.push({resourceName, original, modified: modified}); // TODO: stream instead of saving in disk
     }
+
     // for (const patchPath of patchFilePaths) {
     //   const patch = readFileSync(patchPath);
     //   const modified = applyPatch(original, patch.toString());
